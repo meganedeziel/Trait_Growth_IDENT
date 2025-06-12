@@ -1,0 +1,166 @@
+---
+title: "3_mainmodel_analyses"
+author: "Megane Deziel"
+date: "2025-05-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Below I present the code for all analyses made with the Main model. This includes:
+
+- Model validation using quantile residuals via the packages DHARMa & Shinystan
+- Bayesian R^2
+- Multiplicative factors and standardized coefficients across periods and leaf habits; 
+  Differences in coefficient estimates;
+  90% uncertainty intervals using 10 000 draws from the posterior distribution for mul factors, coefs and differences
+- Model predictions per trait * period * leaf habit as displayed in Figure 2 + Code for Figure 2 (and Figure S6 for model without Betula papyrifera)
+- Model predictions per period * leaf habit as displayed in Figure 3 + Code for Figure 3
+- Bayesian hypothesis tests comparing growth across time periods and between leaf habits as summarized in Table S6
+
+
+```{r, message=FALSE}
+library(here)
+library(brms)
+library(posterior)
+library(ggplot2)
+library(tidyverse)
+library(DHARMa) #model validation
+library(shinystan) #model validation
+library(tidybayes) #for function add_predicted_draws()
+
+#devtools::install_github("psyteachr/introdataviz") #for the specific function that makes half violin plots in figure 3
+library(introdataviz)
+```
+
+Model & Data importation
+```{r}
+main.model<-readRDS(here("results_models", "main.model.loo.RDS"))
+ident_3periods <- readRDS(here("data", "ident_3periods.RDS")) 
+```
+
+## Model validation using quantile residuals via the packages DHARMa & Shinystan
+```{r, message=FALSE, warning=FALSE}
+mod.res <-
+  createDHARMa(simulatedResponse = t(posterior_predict(main.model)),
+               observedResponse = ident_3periods$growth,
+               fittedPredictedResponse = apply(t(posterior_epred(main.model)), 1, mean),
+               integerResponse = FALSE)
+plot(mod.res)
+plotResiduals(mod.res, form=ident_3periods$SLA)
+plotResiduals(mod.res, form=ident_3periods$WD)
+plotResiduals(mod.res, form=ident_3periods$SMlog)
+plotResiduals(mod.res, form=ident_3periods$LDMC)
+
+launch_shinystan(main.model)
+```
+
+## Bayesian R^2
+```{r}
+performance::r2(main.model)
+```
+
+## Multiplicative factors and standardized coefficients across periods and leaf habits
+Below the multiplicative factor are named "slope";
+the standardized coefficients are named "slope_raw";
+Variable names indicate the compared effects considered. “03”, “36” and “69” refer to periods 0-3, 4-6 and 7-9 respectively; “e” and “d” refer to evergreens and deciduous. For example, “LDMC_03_ed” can be read as the difference between the LDMC trait effect on evergreen growth and the LDMC trait effect on deciduous growth for period 0-3; “LDMC_e_0346” can be read as the difference between the LDMC trait effect on evergreen growth at period 0-3 and the LDMC trait effect on evergreen growth at period 4-6.
+
+The dataframe created (draws_summarise) contains results displayed in Table 2 and Table S5
+```{r}
+source(here("functions", "draws_summarise_table.R")) #sourcing custom function
+table<-draws_summarise_table(ident_3periods, main.model)
+table
+```
+
+## Model predictions per trait * period * leaf habit as displayed in Figure 2 + Code for Figure 2 & Figure S6
+```{r, message=FALSE, warning=FALSE}
+library(ggpubr) #necessary for the custom growthpreds function to work
+source(here("functions", "growthpreds.R")) #sourcing custom function growthpreds() that generates predictions and uncertainty intervals + produces the figure
+figure2<-growthpreds(ident_3periods, main.model)
+figure2
+
+pdf(here("figures", "figure2.pdf"), width=8.5, height=11)
+figure2
+dev.off()
+
+### And here is for Figure S6 (same predictions but with a model without the species Betula papyrifera)
+main.model.nobepa<-readRDS(here("results_models", "main.model.nobepa.loo.RDS"))
+source(here("functions", "growthpreds_nobepa.R")) 
+figures6<-growthpreds_nobepa(ident_3periods, main.model.nobepa)
+
+pdf(here("figures", "figures6.pdf"), width=8.5, height=5.5)
+figures6
+dev.off()
+```
+
+### Model predictions per period * leaf habit as displayed in Figure 3 + Code for Figure 3
+```{r, message=FALSE, warning=FALSE}
+## mean graph
+pred.mean <-
+  add_predicted_draws(ident_3periods, main.model, re_formula = NA) %>%
+  ungroup() %>%
+  group_by(time, CE, .draw) |>
+  summarize(growth.mean = mean(.prediction))
+
+pred.mean.sum <-
+  ungroup(pred.mean) %>%
+  group_by(time, CE) %>%
+  summarise(growth.mean.mean = mean(growth.mean),
+            growth.mean.q5 = quantile(growth.mean, 0.05),
+            growth.mean.q95 = quantile(growth.mean, 0.95))
+
+pred.mean$time<-
+with(pred.mean, factor(time, 
+levels = c("0 to 3 years", "3 to 6 years", "6 to 9 years"), labels = c("period 0-3", "period 4-6", "period 7-9")))
+
+pred.mean.sum$time<-
+with(pred.mean.sum, factor(time, 
+levels = c("0 to 3 years", "3 to 6 years", "6 to 9 years"), labels = c("period 0-3", "period 4-6", "period 7-9")))
+legend_title<-""
+
+
+plot_mean<-
+ggplot(data=pred.mean.sum, aes(x=time)) +
+introdataviz::geom_split_violin(data=pred.mean, 
+                                #position=position_dodge(1), 
+                                aes(x=time, y=growth.mean, fill=CE, color=CE), linewidth=0.3, alpha=0.4, width=1.5) +
+geom_pointrange(data=pred.mean.sum, 
+                position=position_dodge(0.1),
+                linewidth=0.6,
+                size=0.5,
+                legend=NULL, 
+                aes(x=time, y=growth.mean.mean, ymin=growth.mean.q5, ymax=growth.mean.q95, group=CE)) +
+scale_color_manual(name=NULL, legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+scale_fill_manual(name=NULL, legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+#geom_text(data = growth_preds, aes(y = 150, label = annotate, group = CE), size= 6, position = position_dodge(0.1)) +
+  theme_bw() +
+theme(axis.text.x=element_text(size=10.5, colour = "black")) +
+  labs(
+       x="",
+       y="Growth (cm/year)") +
+scale_y_continuous(limits = c(0, 150)) +
+scale_x_discrete(expand=c(0, 0))
+plot_mean
+
+pdf(here("figures", "figure3.pdf"), width=8.25, height=6.25)
+plot_mean
+dev.off()
+```
+
+## Bayesian hypothesis tests comparing growth across time periods and between leaf habits as summarized in Table S6
+```{r, message=FALSE}
+##test hypotheses differences between time periods within deciduous or evergreens
+hypothesis(main.model, "Intercept + time3to6years > Intercept", class = "b") 
+hypothesis(main.model, "Intercept + time6to9years > Intercept + time3to6years", class = "b") 
+hypothesis(main.model, "Intercept + CEE + time3to6years + time3to6years:CEE > Intercept + CEE", class = "b") 
+hypothesis(main.model, "Intercept + CEE + time6to9years + time6to9years:CEE > Intercept + CEE + time3to6years + time3to6years:CEE", class = "b")
+
+#comparison between deciduous and evergreen within the same time period
+hypothesis(main.model, "Intercept > Intercept + CEE", class="b")
+hypothesis(main.model, "Intercept + time3to6years > Intercept + time3to6years:CEE", class = "b")
+hypothesis(main.model, "Intercept + time6to9years > Intercept + time6to9years:CEE", class = "b")
+hypothesis(main.model, "Intercept + time6to9years:CEE > Intercept + time6to9years", class = "b")
+```
+

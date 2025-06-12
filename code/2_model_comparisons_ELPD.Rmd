@@ -1,0 +1,102 @@
+---
+title: "2_model_comparisons_ELPD"
+author: "Megane Deziel"
+date: "2025-04-10"
+output: html_document
+---
+
+```{r}
+library(here)
+library(brms)
+library(ggplot2)
+```
+
+Below I present the code used to compare all alternative models considered in the study using 
+differences in Expected Log Pointwise Predictive Density (ELPD) and plot the results for Figure 1.
+
+Model importation
+```{r}
+main.model<-readRDS(here("results_models", "main.model.loo.RDS"))
+mb1<-readRDS(here("results_models", "mb1.loo.RDS"))
+mb2<-readRDS(here("results_models", "mb2.loo.RDS"))
+mb3<-readRDS(here("results_models", "mb3.loo.RDS"))
+mh2<-readRDS(here("results_models", "mh2.loo.RDS"))
+mh3<-readRDS(here("results_models", "mh3.loo.RDS"))
+mh4<-readRDS(here("results_models", "mh4.loo.RDS"))
+```
+
+Model performance comparison based on differences in ELPD
+```{r}
+loo_compare(main.model, mb1, mb2, mb3, mh2, mh3, mh4) #as in Table S3
+loo_compare(mb1, mb2, mb3, mh4) #as in Table S4
+```
+
+Figure 1: Model performance comparison based on differences in Expected Log Pointwise Predictive Density (ELPD)
+```{r}
+legend_title=""
+loo_df<-as.data.frame(loo_compare(main.model, mb1, mb2, mb3, mh2, mh3, mh4))
+loo_df$name<-c("MH1 - Main model", "MH2 - No period", "MH3 - No leaf habit", "MH4 - No Leaf habit & No period", "MB3", "MB2", "MB1")
+loo_df<-loo_df[c(1:7), c(9, 1, 2)]
+loo_df$lower<-loo_df$elpd_diff-loo_df$se_diff
+loo_df$upper<-loo_df$elpd_diff+loo_df$se_diff
+loo_df<-loo_df[order(loo_df$elpd_diff),]
+loo_df$type<-c("Baseline models", "Baseline models", "Baseline models", "Hypothesis-driven models", "Hypothesis-driven models", "Hypothesis-driven models", "Main model")
+yval1=0
+yval2=-9519.5
+loo_plot <- ggplot(loo_df, aes(x = reorder(name, elpd_diff), y = elpd_diff)) +
+  geom_line(aes(group = 1), color = "black", linewidth = 0.25) +
+  geom_pointrange(aes(color = type, ymin=lower, ymax=upper), shape=21) +
+  geom_hline(aes(yintercept = yval1, linetype = "Best model"), color = "red3") +
+  geom_hline(aes(yintercept = yval2, linetype = "Worst model"), color = "darkgrey") +
+  scale_y_continuous(limits = c(-10000, 0), breaks = seq(-10000, 0, by = 1000)) +
+  scale_color_manual(
+    name = NULL,
+    values = c(
+      "Baseline models" = "darkgrey",
+      "Hypothesis-driven models" = "black",
+      "Main model" = "red3"
+    ),
+    breaks = c("Baseline models", "Hypothesis-driven models", "Main model"),
+    labels = c("Baseline models", "Hypothesis-driven models", "Main model")
+  ) +
+  scale_linetype_manual(
+    name = NULL,  # Removes the title for the dashed lines legend
+    values = c(
+      "Best model" = "dashed",
+      "Worst model" = "dashed"
+    ),
+    breaks = c("Best model", "Worst model"),
+    labels = c("Best model", "Worst model")
+  ) +
+  guides(
+    color = guide_legend(order = 1, override.aes = list(linetype = "blank", shape = 16)),
+    linetype = guide_legend(order = 2, override.aes = list(color = c("red3", "darkgrey")))
+  ) + 
+  guides(
+    color = guide_legend(
+      order = 1,
+      override.aes = list(shape = 1, fill = NA, linetype= "blank"), # Ensure empty circles in legend
+    ),
+    linetype = guide_legend(
+      order = 2,
+      override.aes = list(color = c("red3", "darkgrey"))
+    )
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "right"
+  ) +
+  labs(
+    x = "",
+    y = "Model performance (difference in ELPD vs. best model)"
+  )
+
+loo_plot
+
+pdf(here("figures", "figure1.pdf"), width=5, height=7)
+loo_plot
+dev.off()
+```
+
+

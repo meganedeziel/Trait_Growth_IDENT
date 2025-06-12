@@ -1,0 +1,316 @@
+---
+title: "4_raw_data_figures"
+author: "Megane Deziel"
+date: "2025-06-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Code for all figures of raw data, including:
+- Figures S1, S2, S3: Upset plots representing the ditribution and overlapping of tree species among different sites and periods
+- Figure S4: Trait values per species (mean values)
+- Figure S5: Influence of Betula papyrifera on the relationship between height growth rate and SLA & LDMC for period 0-3
+- Figure S7: Leaf longevity values for all species
+
+```{r}
+library(tidyverse)
+library(ComplexUpset)
+library(ggpubr)
+```
+
+```{r}
+ident_3periods<-readRDS(here("data", "ident_3periods.RDS")) 
+traits<-readRDS(here("data", "traits.RDS"))
+```
+
+## Figures S1, S2, S3: Upset plots representing the ditribution and overlapping of tree species among different sites and periods
+```{r, warning=FALSE, message=FALSE}
+from_list_f<-function(list_data) {
+    members = unique(unlist(list_data))
+    data.frame(
+        lapply(list_data, function(set) members %in% set),
+        row.names=members,
+        check.names=FALSE
+    )
+}
+
+## Figure S1 - Period 0-3 
+spperproj30_df<-select(ident_3periods[ident_3periods$time=="0 to 3 years", ], ProjectName, CodeSp, CE) %>% 
+  drop_na %>%
+  group_by(CodeSp) %>%
+  mutate(number=length(CodeSp)) %>%
+  mutate(CodeSp2=paste(CodeSp, " (", number, ")", sep="")) %>%
+  unique()
+
+spperproj30<-split(spperproj30_df$CodeSp2, spperproj30_df$ProjectName)
+matrix30<-from_list_f(spperproj30)
+matrix30$CodeSp2=rownames(matrix30)
+matrix30<-left_join(matrix30, unique(spperproj30_df[,c(3,5)]))
+
+legend_title<-""
+
+compupplot30<-upset(matrix30, 
+                    name="Site",
+                    set_sizes=FALSE,
+      intersect=colnames(matrix30[1:6]),
+      base_annotations=list(
+        "Intersection size" = (
+          intersection_size(
+            bar_number_threshold=1,
+            color="black",
+            mapping=aes(fill=CE)
+          ) + scale_color_manual(values = c('white', 'black')) +
+            theme_void()
+          +
+  scale_fill_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen"))
+          + geom_text(
+            aes(label=CodeSp2),
+            position=position_stack(),
+            na.rm=TRUE,
+            vjust=2.2,
+            size=2.8,
+            color="white") +
+    theme(legend.position="top")
+        )
+      ),
+      width_ratio = 0.3,
+      height_ratio = 1/4,
+  stripes=c('white')
+      ) 
+
+compupplot30
+
+## Figure S2 - Period 4-6 (in the data i call it 3 to 6 years but it is the exact same period, just the name changes)
+spperproj63_df<-select(ident_3periods[ident_3periods$time=="3 to 6 years", ], ProjectName, CodeSp, CE) %>% 
+  drop_na %>%
+  group_by(CodeSp) %>%
+  mutate(number=length(CodeSp)) %>%
+  mutate(CodeSp2=paste(CodeSp, " (", number, ")", sep="")) %>%
+  unique()
+
+spperproj63<-split(spperproj63_df$CodeSp2, spperproj63_df$ProjectName)
+matrix63<-from_list_f(spperproj63)
+matrix63$CodeSp2=rownames(matrix63)
+matrix63<-left_join(matrix63, unique(spperproj63_df[,c(3,5)]))
+
+compupplot63<-
+  upset(matrix63, 
+                    name="Site",
+                    set_sizes=FALSE,
+      intersect=colnames(matrix63[1:6]),
+      base_annotations=list(
+        "Intersection size" = (
+          intersection_size(
+            bar_number_threshold=1,
+            color="black",
+            mapping=aes(fill=CE)
+          ) + scale_color_manual(values = c('white', 'black')) +
+            theme_void()
+          +
+  scale_fill_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen"))
+          + geom_text(
+            aes(label=CodeSp2),
+            position=position_stack(),
+            na.rm=TRUE,
+            vjust=2.2,
+            size=2.5,
+            color="white") +
+    theme(legend.position="top")
+        )
+      ),
+      width_ratio = 0.3,
+      height_ratio = 1/4,
+  stripes=c('white')
+      ) 
+
+compupplot63
+
+## Figure S3 - Period 7-9 (in the data i call it 6 to 9 years but it is the exact same period, just the name changes)
+spperproj96_df<-select(ident_3periods[ident_3periods$time=="6 to 9 years", ], ProjectName, CodeSp, CE) %>% 
+  drop_na %>%
+  group_by(CodeSp) %>%
+  mutate(number=length(CodeSp)) %>%
+  mutate(CodeSp2=paste(CodeSp, " (", number, ")", sep="")) %>%
+  unique()
+
+spperproj96<-split(spperproj96_df$CodeSp2, spperproj96_df$ProjectName)
+matrix96<-from_list_f(spperproj96)
+matrix96$CodeSp2=rownames(matrix96)
+matrix96<-left_join(matrix96, unique(spperproj96_df[,c(3,5)]))
+
+compupplot96<-
+  upset(matrix96, 
+                    name="Site",
+                    set_sizes=FALSE,
+      intersect=colnames(matrix96[1:3]),
+      base_annotations=list(
+        "Intersection size" = (
+          intersection_size(
+            bar_number_threshold=1,
+            color="black",
+            mapping=aes(fill=CE)
+          ) + scale_color_manual(values = c('white', 'black')) +
+            theme_void()
+          +
+  scale_fill_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen"))
+          + geom_text(
+            aes(label=CodeSp2),
+            position=position_stack(),
+            na.rm=TRUE,
+            vjust=2.2,
+            size=3.5,
+            color="white") +
+    theme(legend.position="top")
+        )
+      ),
+      width_ratio = 0.3,
+      height_ratio = 1/4,
+  stripes=c('white')
+      ) 
+
+compupplot96
+
+pdf(here("figures", "figures1.pdf"), width=8.5, height=5.5)
+compupplot30
+dev.off()
+
+pdf(here("figures", "figures2.pdf"), width=8.5, height=5.5)
+compupplot63
+dev.off()
+
+pdf(here("figures", "figures3.pdf"), width=8.5, height=5.5)
+compupplot96
+dev.off()
+```
+
+## Figure S4: Trait values per species (mean values)
+```{r}
+ldmc_plot<-
+ggplot(na.omit(traits[,c(1, 5, 8)]), aes(x=reorder(traits$CodeSp, LDMC), y=LDMC, group=CE)) +
+  geom_point(aes(color=CE, shape=CE), size=2) +
+  scale_shape_manual(legend_title, values=c(16, 17), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  scale_color_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=6)) +
+  labs(
+       x="",
+       y="LDMC (g/g)") 
+
+sla_plot<-ggplot(na.omit(traits[,c(1, 2, 8)]), aes(x=reorder(traits$CodeSp, SLA), y=SLA, group=CE)) +
+  geom_point(aes(color=CE, shape=CE), size=2) +
+  scale_shape_manual(legend_title, values=c(16, 17), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  scale_color_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=6)) +
+  labs(
+       x="",
+       y=expression("SLA (mm"^2*"/mg)")) 
+
+wd_plot<-ggplot(na.omit(traits[,c(1, 4, 8)]), aes(x=reorder(traits$CodeSp, WD), y=WD, group=CE)) +
+  geom_point(aes(color=CE, shape=CE), size=2) +
+  scale_shape_manual(legend_title, values=c(16, 17), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  scale_color_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=6)) +
+  labs(
+       x="",
+       y=expression("WD (mg/mm"^3*")"))
+
+sm_plot<-ggplot(na.omit(traits[,c(1, 7, 8)]), aes(x=reorder(traits$CodeSp, SMlog), y=SMlog, group=CE)) +
+  geom_point(aes(color=CE, shape=CE), size=2) +
+  scale_shape_manual(legend_title, values=c(16, 17), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  scale_color_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=6)) +
+  labs(
+       x="",
+       y="log(SM) (mg)") 
+
+pdf(here("figures", "figures4.pdf"), width=8.5, height=11)
+ggarrange(sla_plot, wd_plot, ldmc_plot, sm_plot, ncol=1, nrow=4, common.legend = TRUE)
+dev.off()
+```
+
+## Figure S5: Influence of Betula papyrifera on the relationship between height growth rate and SLA & LDMC for period 0-3
+```{r}
+#select data from deciduous species and for period 0-3 only
+growthdat_d<-ident_3periods[ident_3periods$CE=="D" & ident_3periods$time=="0 to 3 years", ]
+growthdat_d$isbepa<-ifelse(growthdat_d$CodeSp=="BEPA", paste("BEPA"), paste("Other species"))
+
+growthdat_d_nobepa<-growthdat[growthdat$CodeSp != "BEPA", ]
+growthdat_d_nobepa$isbepa<-"Other species"
+
+#plot
+legend_title<-""
+
+ldmcgrowth<-ggplot() +
+  geom_point(growthdat_d_nobepa, mapping=aes(x=LDMC, y=growth, fill=isbepa), colour="black", pch=21, size=3) +
+  scale_fill_manual(legend_title, values=c("BEPA"="maroon4", "Other species"="grey"), breaks=c("BEPA", "Other species"), labels = c(expression(paste(italic("Betula papyrifera")), "Other species"))) +
+  geom_smooth(growthdat_d_nobepa, mapping=aes(x=LDMC, y=growth), method=lm, se=F, color="black") +
+  theme_bw() +
+  ylim(0, 120) +
+  labs(
+       x=expression("LDMC (g/g)"),
+       y="Growth (cm/year)") 
+
+slagrowth_b<-ggplot() +
+  geom_point(growthdat_d, mapping=aes(x=SLA, y=growth, fill=isbepa), colour="black", pch=21, size=3) +
+  scale_fill_manual(legend_title, values=c("BEPA"="maroon4", "Other species"="grey"), breaks=c("BEPA", "Other species"), labels = c(expression(paste(italic("Betula papyrifera")), "Other species"))) +
+  geom_smooth(growthdat_d, mapping=aes(x=SLA, y=growth), method=lm, se=F, color="black") +
+  theme_bw() +
+  ylim(0, 120) +
+  labs(title=expression(paste("a) ", italic("Betula papyrifera"), " included")),
+       x=expression("SLA (mm"^2*"/mg)"),
+       y="Growth (cm/year)") 
+
+slagrowth<-ggplot() +
+  geom_point(growthdat_d_nobepa, mapping=aes(x=SLA, y=growth, fill=isbepa), colour="black", pch=21, size=3) +
+  scale_fill_manual(legend_title, values=c("BEPA"="maroon4", "Other species"="grey"), breaks=c("BEPA", "Other species"), labels = c(expression(paste(italic("Betula papyrifera")), "Other species"))) +
+  geom_smooth(growthdat_d_nobepa, mapping=aes(x=SLA, y=growth), method=lm, se=F, color="black") +
+  theme_bw() +
+  ylim(0, 120) +
+  labs(title=expression(paste("b) ", italic("Betula papyrifera"), " not included")),
+       x=expression("SLA (mm"^2*"/mg)"),
+       y="Growth (cm/year)")
+
+ldmcgrowth_b<-ggplot() +
+  geom_point(growthdat_d, mapping=aes(x=LDMC, y=growth, fill=isbepa), colour="black", pch=21, size=3) +
+  scale_fill_manual(legend_title, values=c("BEPA"="maroon4", "Other species"="grey"), breaks=c("BEPA", "Other species"), labels = c(expression(paste(italic("Betula papyrifera")), "Other species"))) +
+  geom_smooth(growthdat_d, mapping=aes(x=LDMC, y=growth), method=lm, se=F, color="black") +
+  theme_bw() +
+  ylim(0, 120) +
+  labs(
+       x=expression("LDMC (g/g)"),
+       y="Growth (cm/year)") 
+
+
+slaldmc<-ggarrange(slagrowth_b, slagrowth, ldmcgrowth_b, ldmcgrowth, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+
+pdf(here("figures", "figures5.pdf"), width=8.5, height=10)
+slaldmc
+dev.off()
+```
+
+## Figure S7 : Leaf longevity values per species
+```{r}
+leaf_l_plot<-
+ggplot(na.omit(traits[,c(1, 6, 8)]), aes(x=reorder(traits$CodeSp, LL), y=LL, group=CE)) +
+  geom_point(aes(color=CE, shape=CE), size=3) +
+  scale_shape_manual(legend_title, values=c(16, 17), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  scale_color_manual(legend_title, values=c("D"="maroon4", "E"="olivedrab4"), breaks=c("D", "E"), labels = c("Deciduous", "Evergreen")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(
+       x="",
+       y="Leaf longevity (months)") +
+  theme(legend.position="top")
+
+
+pdf(here("figures", "figures7.pdf"), width=8.5, height=5.5)
+leaf_l_plot
+dev.off()
+```
+
