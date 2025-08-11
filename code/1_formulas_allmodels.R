@@ -9,9 +9,9 @@
 library(here)
 library(tidyverse)
 library(brms)
-
 ### Data importation 
 ident_3periods <- readRDS(here("data", "ident_3periods.RDS")) 
+dir.create(here("results_models"), recursive = TRUE)
 
 ### Original model 
 
