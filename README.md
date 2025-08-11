@@ -3,6 +3,7 @@
 This repository contains the code, data and metadata required to reproduce models and figures presented in the following paper: 
 
 Resolving the Effects of Functional Traits on Tree Growth Rates: The Influence of Temporal Dynamics and Divergent Strategies by Leaf Habit
+
 Journal of Ecology (2025 - in press)
 
 Authors: 
