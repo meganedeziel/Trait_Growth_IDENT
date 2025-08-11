@@ -30,9 +30,10 @@ library(tidyverse)
 library(DHARMa) #model validation
 library(shinystan) #model validation
 library(tidybayes) #for function add_predicted_draws()
-
+library(performance)
 #devtools::install_github("psyteachr/introdataviz") #for the specific function that makes half violin plots in figure 3
 library(introdataviz)
+library(ggpubr) #necessary for the custom growthpreds function to work
 ```
 
 Model & Data importation
@@ -76,7 +77,6 @@ table
 
 ## Model predictions per trait * period * leaf habit as displayed in Figure 2 + Code for Figure 2 & Figure S6
 ```{r, message=FALSE, warning=FALSE}
-library(ggpubr) #necessary for the custom growthpreds function to work
 source(here("functions", "growthpreds.R")) #sourcing custom function growthpreds() that generates predictions and uncertainty intervals + produces the figure
 figure2<-growthpreds(ident_3periods, main.model)
 figure2

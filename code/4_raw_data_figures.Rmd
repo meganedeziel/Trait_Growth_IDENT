@@ -240,7 +240,7 @@ dev.off()
 growthdat_d<-ident_3periods[ident_3periods$CE=="D" & ident_3periods$time=="0 to 3 years", ]
 growthdat_d$isbepa<-ifelse(growthdat_d$CodeSp=="BEPA", paste("BEPA"), paste("Other species"))
 
-growthdat_d_nobepa<-growthdat[growthdat$CodeSp != "BEPA", ]
+growthdat_d_nobepa<-growthdat_d[growthdat_d$CodeSp != "BEPA", ]
 growthdat_d_nobepa$isbepa<-"Other species"
 
 #plot
