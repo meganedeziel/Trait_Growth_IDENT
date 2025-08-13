@@ -11,3 +11,6 @@ Déziel, M. (1), Schoenig, D., Sousa-Silva, R., Searle, E. B., Parker, W. C., Ca
 Nock, C. A., Messier, C., Reich, P., Stefanski, A., Dong, N., Hajek, P., Gravel, D., Paquette, A.
 
 (1) Centre for Forest Research, Département des sciences biologiques, Université du Québec à Montréal, Montréal, Québec, Canada
+
+Zenodo DOI: https://doi.org/10.5281/zenodo.16799186
+
