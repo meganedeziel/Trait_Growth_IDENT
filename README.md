@@ -12,5 +12,5 @@ Nock, C. A., Messier, C., Reich, P., Stefanski, A., Dong, N., Hajek, P., Gravel,
 
 (1) Centre for Forest Research, Département des sciences biologiques, Université du Québec à Montréal, Montréal, Québec, Canada
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15121490.svg)](https://doi.org/10.5281/zenodo.16799185)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15121490.svg)](https://doi.org/10.5281/zenodo.16799186)
 
